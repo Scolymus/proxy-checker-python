@@ -25,8 +25,7 @@ class ProxyChecker:
 
         # Checks
         if self.ip == "":
-            print("ERROR: https://api.ipify.org is down. This module won't work")
-            exit()
+            print("ERROR: cannot get device ip")
 
         self.check_proxy_judges()
 
@@ -53,9 +52,10 @@ class ProxyChecker:
         checked_judges = []
 
         for judge in self.proxy_judges:
-            if self.send_query(url = judge):
+            if self.send_query(url=judge):
                 checked_judges.append(judge)
 
+        # push working proxy judges url for `check_proxy`
         self.proxy_judges = checked_judges
 
         if len(checked_judges) == 0:
@@ -69,13 +69,13 @@ class ProxyChecker:
             Gets the IP checking it in https://api.ipify.org
             Return: IP or "" if it couldn't find anything
         """
-        r = self.send_query(url='https://api.ipify.org/')
+        r = self.send_query('https://cloudflare.com/cdn-cgi/trace')
 
         if not r:
             r = self.send_query('https://httpbin.org/ip')
 
         if not r:
-            r = self.send_query('https://cloudflare.com/cdn-cgi/trace')
+            r = self.send_query(url='https://api.ipify.org/')
 
         if not r:
             return ''
@@ -159,10 +159,13 @@ class ProxyChecker:
             Obtain the anonymity of the proxy
             Args:
                 :param, str. IP
-            Return: Transparent, Anonymous or Elite
+            Return: Transparent, Anonymous, Elite. Empty for failed get anonymity
         """
+        if self.ip == '':
+            return ''
 
         if self.ip in r:
+            # device ip is found in proxy judges response headers
             return 'Transparent'
 
         privacy_headers = [
@@ -177,8 +180,10 @@ class ProxyChecker:
         ]
 
         if any([header in r for header in privacy_headers]):
+            # contains spesific headers
             return 'Anonymous'
 
+        # perfect
         return 'Elite'
 
     def get_country(self, ip: str) -> list:
