@@ -368,7 +368,6 @@ class FileCache:
             Optional[Any]: The cached value if valid, otherwise None.
         """
         if not os.path.exists(self.file_path):
-            print("Cache file not found")
             return None
 
         with open(self.file_path, 'r') as cache_file:
