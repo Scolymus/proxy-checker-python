@@ -1,7 +1,10 @@
+import json
+import os
 import random
 import re
 from io import BytesIO
-from typing import Union
+import time
+from typing import Any, Optional, Union
 
 import certifi
 import pycurl
@@ -21,7 +24,7 @@ class ProxyChecker:
             'http://sh.webmanajemen.com/data/azenv.php'
         ]
 
-        self.ip = self.get_ip()
+        self.ip = self.get_device_ip()
 
         # Checks
         if self.ip == "":
@@ -64,11 +67,22 @@ class ProxyChecker:
         elif len(checked_judges) == 1:
             print('WARNING! THERE\'S ONLY 1 JUDGE!')
 
-    def get_ip(self) -> str:
+    def get_device_ip(self, cache_timeout: Optional[int] = 3600) -> str:
         """
-            Gets the IP checking it in https://api.ipify.org
-            Return: IP or "" if it couldn't find anything
+            Gets the IP address by checking it via various services.
+
+            Parameters:
+            cache_timeout (Optional[int]): Cache timeout in seconds. Default is 3600 seconds (1 hour).
+
+            Returns:
+            str: IP address or an empty string if it couldn't find anything.
         """
+        cache = FileCache('tmp/device-ip.json')
+        # Read cache and check for expiration
+        cached_value = cache.read_cache()
+        if cached_value is not None:
+            return cached_value
+
         r = self.send_query('https://cloudflare.com/cdn-cgi/trace')
 
         if not r:
@@ -85,7 +99,11 @@ class ProxyChecker:
             r"(?!0)(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)",
             r['response'])
         if ip_address_match:
-            return ip_address_match.group(0)
+            result = ip_address_match.group(0)
+            if result:
+                # Write cache with a value and expiration time in seconds
+                cache.write_cache('cached_value', cache_timeout)
+            return result
 
         return r['response']
 
@@ -297,3 +315,71 @@ class ProxyChecker:
             results['remote_address'] = remote_addr
 
         return results
+
+
+class FileCache:
+    """
+    A simple file-based cache system with expiration.
+
+    Attributes:
+        file_path (str): Path to the cache file.
+
+    Methods:
+        write_cache(value: Any, expires_in: int) -> None:
+            Writes a value to the cache with an expiration time.
+
+        read_cache() -> Optional[Any]:
+            Reads the value from the cache if it has not expired.
+    """
+
+    def __init__(self, file_path: str) -> None:
+        """
+        Initializes the FileCache with a file path.
+
+        Args:
+            file_path (str): The path to the cache file.
+        """
+        self.file_path = file_path
+
+    def write_cache(self, value: Any, expires_in: int) -> None:
+        """
+        Writes a value to the cache with an expiration time.
+
+        Args:
+            value (Any): The value to be cached.
+            expires_in (int): The expiration time in seconds.
+        """
+        # Ensure the parent directory exists
+        os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+
+        cache_data = {
+            'value': value,
+            'timestamp': time.time(),
+            'expires_in': expires_in
+        }
+        with open(self.file_path, 'w') as cache_file:
+            json.dump(cache_data, cache_file)
+
+    def read_cache(self) -> Optional[Any]:
+        """
+        Reads the value from the cache if it has not expired.
+
+        Returns:
+            Optional[Any]: The cached value if valid, otherwise None.
+        """
+        if not os.path.exists(self.file_path):
+            print("Cache file not found")
+            return None
+
+        with open(self.file_path, 'r') as cache_file:
+            cache_data = json.load(cache_file)
+
+        current_time = time.time()
+        cache_time = cache_data['timestamp']
+        expires_in = cache_data['expires_in']
+
+        if current_time - cache_time > expires_in:
+            print("Cache expired")
+            return None
+
+        return cache_data['value']
