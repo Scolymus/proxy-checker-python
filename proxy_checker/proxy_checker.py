@@ -109,7 +109,7 @@ class ProxyChecker:
             result = ip_address_match.group(0)
             if result:
                 # Write cache with a value and expiration time in seconds
-                cache.write_cache('cached_value', cache_timeout)
+                cache.write_cache(result, cache_timeout)
             return result
 
         return r['response']
