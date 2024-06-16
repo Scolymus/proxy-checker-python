@@ -83,13 +83,20 @@ class ProxyChecker:
         if cached_value is not None:
             return cached_value
 
-        r = self.send_query('https://cloudflare.com/cdn-cgi/trace')
-
-        if not r:
-            r = self.send_query('https://httpbin.org/ip')
-
-        if not r:
-            r = self.send_query(url='https://api.ipify.org/')
+        ip_services = [
+            'https://api64.ipify.org',
+            'https://ipinfo.io/ip',
+            'https://api.myip.com',
+            'https://ip.42.pl/raw',
+            'https://ifconfig.me/ip',
+            'https://cloudflare.com/cdn-cgi/trace',
+            'https://httpbin.org/ip',
+            'https://api.ipify.org'
+        ]
+        for url in ip_services:
+            r = self.send_query(url=url)
+            if r:
+                break
 
         if not r:
             return ''
