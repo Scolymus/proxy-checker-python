@@ -385,7 +385,7 @@ class FileCache:
         expires_in = cache_data['expires_in']
 
         if current_time - cache_time > expires_in:
-            print("Cache expired")
+            # print("Cache expired")
             return None
 
         return cache_data['value']
