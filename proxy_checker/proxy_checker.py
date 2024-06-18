@@ -377,15 +377,17 @@ class FileCache:
         if not os.path.exists(self.file_path):
             return None
 
-        with open(self.file_path, 'r') as cache_file:
-            cache_data = json.load(cache_file)
+        try:
+            with open(self.file_path, 'r') as cache_file:
+                cache_data = json.load(cache_file)
 
-        current_time = time.time()
-        cache_time = cache_data['timestamp']
-        expires_in = cache_data['expires_in']
+            current_time = time.time()
+            cache_time = cache_data['timestamp']
+            expires_in = cache_data['expires_in']
 
-        if current_time - cache_time > expires_in:
-            # print("Cache expired")
+            if current_time - cache_time > expires_in:
+                return None
+
+            return cache_data['value']
+        except Exception:
             return None
-
-        return cache_data['value']
