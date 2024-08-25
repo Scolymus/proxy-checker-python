@@ -2,8 +2,8 @@ import json
 import os
 import random
 import re
-from io import BytesIO
 import time
+from io import BytesIO
 from typing import Any, Optional, Union
 
 import certifi
@@ -15,13 +15,13 @@ class ProxyChecker:
         self.timeout = timeout
         self.verbose = verbose
         self.proxy_judges = [
-            'https://wfuchs.de/azenv.php',
-            'http://mojeip.net.pl/asdfa/azenv.php',
-            'http://httpheader.net/azenv.php',
-            'http://pascal.hoez.free.fr/azenv.php',
-            'https://www.cooleasy.com/azenv.php',
-            'http://azenv.net/',
-            'http://sh.webmanajemen.com/data/azenv.php'
+            "https://wfuchs.de/azenv.php",
+            "http://mojeip.net.pl/asdfa/azenv.php",
+            "http://httpheader.net/azenv.php",
+            "http://pascal.hoez.free.fr/azenv.php",
+            "https://www.cooleasy.com/azenv.php",
+            "http://azenv.net/",
+            "http://sh.webmanajemen.com/data/azenv.php",
         ]
 
         self.ip = self.get_device_ip()
@@ -34,23 +34,23 @@ class ProxyChecker:
 
     def change_timeout(self, timeout: int) -> None:
         """
-            Sets timeout for requests
-            Args:
-                :param timeout, int. Timeout in ms
+        Sets timeout for requests
+        Args:
+            :param timeout, int. Timeout in ms
         """
         self.timeout = timeout
 
     def change_verbose(self, value: bool) -> None:
         """
-            Sets verbose for curl
+        Sets verbose for curl
         """
         self.verbose = value
 
     def check_proxy_judges(self) -> None:
         """
-            This proxy checks several urls to get the proxy availability. These are the judges.
-            There are several in this module. However, they can be nonoperational. This function
-            removes the one not operative.
+        This proxy checks several urls to get the proxy availability. These are the judges.
+        There are several in this module. However, they can be nonoperational. This function
+        removes the one not operative.
         """
         checked_judges = []
 
@@ -62,36 +62,38 @@ class ProxyChecker:
         self.proxy_judges = checked_judges
 
         if len(checked_judges) == 0:
-            print("ERROR: JUDGES ARE OUTDATED. CREATE A GIT BRANCH AND UPDATE SELF.PROXY_JUDGES")
+            print(
+                "ERROR: JUDGES ARE OUTDATED. CREATE A GIT BRANCH AND UPDATE SELF.PROXY_JUDGES"
+            )
             exit()
         elif len(checked_judges) == 1:
-            print('WARNING! THERE\'S ONLY 1 JUDGE!')
+            print("WARNING! THERE'S ONLY 1 JUDGE!")
 
     def get_device_ip(self, cache_timeout: Optional[int] = 3600) -> str:
         """
-            Gets the IP address by checking it via various services.
+        Gets the IP address by checking it via various services.
 
-            Parameters:
-            cache_timeout (Optional[int]): Cache timeout in seconds. Default is 3600 seconds (1 hour).
+        Parameters:
+        cache_timeout (Optional[int]): Cache timeout in seconds. Default is 3600 seconds (1 hour).
 
-            Returns:
-            str: IP address or an empty string if it couldn't find anything.
+        Returns:
+        str: IP address or an empty string if it couldn't find anything.
         """
-        cache = FileCache('tmp/device-ip.json')
+        cache = FileCache("tmp/device-ip.json")
         # Read cache and check for expiration
         cached_value = cache.read_cache()
         if cached_value is not None:
             return cached_value
 
         ip_services = [
-            'https://api64.ipify.org',
-            'https://ipinfo.io/ip',
-            'https://api.myip.com',
-            'https://ip.42.pl/raw',
-            'https://ifconfig.me/ip',
-            'https://cloudflare.com/cdn-cgi/trace',
-            'https://httpbin.org/ip',
-            'https://api.ipify.org'
+            "https://api64.ipify.org",
+            "https://ipinfo.io/ip",
+            "https://api.myip.com",
+            "https://ip.42.pl/raw",
+            "https://ifconfig.me/ip",
+            "https://cloudflare.com/cdn-cgi/trace",
+            "https://httpbin.org/ip",
+            "https://api.ipify.org",
         ]
         for url in ip_services:
             r = self.send_query(url=url)
@@ -99,12 +101,13 @@ class ProxyChecker:
                 break
 
         if not r:
-            return ''
+            return ""
 
         # parse IP using regex
         ip_address_match = re.search(
             r"(?!0)(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)",
-            r['response'])
+            r["response"],
+        )
         if ip_address_match:
             result = ip_address_match.group(0)
             if result:
@@ -112,20 +115,26 @@ class ProxyChecker:
                 cache.write_cache(result, cache_timeout)
             return result
 
-        return r['response']
+        return r["response"]
 
-    def send_query(self, proxy: Union[str, bool] = False, url: str = None, tls=1.3,
-                   user: str = None, password: str = None) -> Union[bool, dict]:
+    def send_query(
+        self,
+        proxy: Union[str, bool] = False,
+        url: str = None,
+        tls=1.3,
+        user: str = None,
+        password: str = None,
+    ) -> Union[bool, dict]:
         """
-            Sends a query to a judge to get info from judge.
-            Args:
-                :param proxy: "IP:Port". Proxy to use in the connection
-                :param url: Url judge to use
-                :param tls
-                :param user: Username for proxy
-                :param password: Password for proxy
-            Returns:
-                False if response is not 200. Otherwise: 'timeout': timeout,'response': response}
+        Sends a query to a judge to get info from judge.
+        Args:
+            :param proxy: "IP:Port". Proxy to use in the connection
+            :param url: Url judge to use
+            :param tls
+            :param user: Username for proxy
+            :param password: Password for proxy
+        Returns:
+            False if response is not 200. Otherwise: 'timeout': timeout,'response': response}
         """
         response = BytesIO()
         c = pycurl.Curl()
@@ -144,7 +153,7 @@ class ProxyChecker:
 
         if proxy:
             c.setopt(c.PROXY, proxy)
-            if proxy.startswith('https'):
+            if proxy.startswith("https"):
                 # c.setopt(c.SSL_VERIFYHOST, 1)
                 # c.setopt(pycurl.SSL_VERIFYHOST, 2)
                 # c.setopt(c.SSL_VERIFYPEER, 1)
@@ -173,62 +182,69 @@ class ProxyChecker:
         timeout = round(c.getinfo(c.CONNECT_TIME) * 1000)
 
         # Decode the response content
-        response = response.getvalue().decode('iso-8859-1')
+        response = response.getvalue().decode("iso-8859-1")
 
-        return {
-            'timeout': timeout,
-            'response': response
-        }
+        return {"timeout": timeout, "response": response}
 
     def parse_anonymity(self, r: str) -> str:
         """
-            Obtain the anonymity of the proxy
-            Args:
-                :param, str. IP
-            Return: Transparent, Anonymous, Elite. Empty for failed get anonymity
+        Obtain the anonymity of the proxy
+        Args:
+            :param, str. IP
+        Return: Transparent, Anonymous, Elite. Empty for failed get anonymity
         """
-        if self.ip == '':
-            return ''
+        if self.ip == "":
+            return ""
 
         if self.ip in r:
             # device ip is found in proxy judges response headers
-            return 'Transparent'
+            return "Transparent"
 
         privacy_headers = [
-            'VIA',
-            'X-FORWARDED-FOR',
-            'X-FORWARDED',
-            'FORWARDED-FOR',
-            'FORWARDED-FOR-IP',
-            'FORWARDED',
-            'CLIENT-IP',
-            'PROXY-CONNECTION'
+            "VIA",
+            "X-FORWARDED-FOR",
+            "X-FORWARDED",
+            "FORWARDED-FOR",
+            "FORWARDED-FOR-IP",
+            "FORWARDED",
+            "CLIENT-IP",
+            "PROXY-CONNECTION",
         ]
 
         if any([header in r for header in privacy_headers]):
             # contains spesific headers
-            return 'Anonymous'
+            return "Anonymous"
 
         # perfect
-        return 'Elite'
+        return "Elite"
 
     def get_country(self, ip: str) -> list:
         """
-            Checks in https://ip2c.org the country from a given IP
-            Args:
-                :param ip, str. Including dots, but not port
-            Return: [country, country shortname Alpha-2 code]
+        Checks in https://ip2c.org the country from a given IP
+        Args:
+            :param ip, str. Including dots, but not port
+        Return: [country, country shortname Alpha-2 code]
         """
-        r = self.send_query(url='https://ip2c.org/' + ip)
+        r = self.send_query(url="https://ip2c.org/" + ip)
 
-        if r and r['response'][0] == '1':
-            r = r['response'].split(';')
+        if r and r["response"][0] == "1":
+            r = r["response"].split(";")
             return [r[3], r[1]]
 
-        return ['-', '-']
+        return ["-", "-"]
 
-    def check_proxy(self, proxy: str, check_country: bool = True, check_address: bool = False, check_all_protocols: bool = False,
-                    protocol: Union[str, list] = None, retries: int = 1, tls: float = 1.3, user: str = None, password: str = None) -> Union[bool, dict]:
+    def check_proxy(
+        self,
+        proxy: str,
+        check_country: bool = True,
+        check_address: bool = False,
+        check_all_protocols: bool = False,
+        protocol: Union[str, list] = None,
+        retries: int = 1,
+        tls: float = 1.3,
+        user: str = None,
+        password: str = None,
+    ) -> Union[bool, dict]:
         """
         Checks if the proxy is working.
         Args:
@@ -253,7 +269,7 @@ class ProxyChecker:
         timeout = 0
 
         # Select protocols to check
-        protocols_to_test = ['http', 'https', 'socks4', 'socks5']
+        protocols_to_test = ["http", "https", "socks4", "socks5"]
 
         if isinstance(protocol, list):
             temp = []
@@ -270,14 +286,19 @@ class ProxyChecker:
         # Test the proxy for each protocol
         for retry in range(retries):
             for protocol in protocols_to_test:
-                r = self.send_query(proxy=protocol + '://' + proxy, user=user, password=password, tls=tls)
+                r = self.send_query(
+                    proxy=protocol + "://" + proxy,
+                    user=user,
+                    password=password,
+                    tls=tls,
+                )
 
                 # Check if the request failed
                 if not r:
                     continue
 
                 protocols[protocol] = r
-                timeout += r['timeout']
+                timeout += r["timeout"]
 
                 if not check_all_protocols:
                     break
@@ -290,11 +311,11 @@ class ProxyChecker:
         if len(protocols) == 0:
             return False
 
-        r = protocols[random.choice(list(protocols.keys()))]['response']
+        r = protocols[random.choice(list(protocols.keys()))]["response"]
 
         # Get country
         if check_country:
-            country = self.get_country(proxy.split(':')[0])
+            country = self.get_country(proxy.split(":")[0])
 
         # Check anonymity
         anonymity = self.parse_anonymity(r)
@@ -304,23 +325,23 @@ class ProxyChecker:
 
         # Check remote address
         if check_address:
-            remote_regex = r'REMOTE_ADDR = (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+            remote_regex = r"REMOTE_ADDR = (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"
             remote_addr = re.search(remote_regex, r)
             if remote_addr:
                 remote_addr = remote_addr.group(1)
 
         results = {
-            'protocols': list(protocols.keys()),
-            'anonymity': anonymity,
-            'timeout': timeout
+            "protocols": list(protocols.keys()),
+            "anonymity": anonymity,
+            "timeout": timeout,
         }
 
         if check_country:
-            results['country'] = country[0]
-            results['country_code'] = country[1]
+            results["country"] = country[0]
+            results["country_code"] = country[1]
 
         if check_address:
-            results['remote_address'] = remote_addr
+            results["remote_address"] = remote_addr
 
         return results
 
@@ -361,11 +382,11 @@ class FileCache:
         os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
 
         cache_data = {
-            'value': value,
-            'timestamp': time.time(),
-            'expires_in': expires_in
+            "value": value,
+            "timestamp": time.time(),
+            "expires_in": expires_in,
         }
-        with open(self.file_path, 'w') as cache_file:
+        with open(self.file_path, "w") as cache_file:
             json.dump(cache_data, cache_file)
 
     def read_cache(self) -> Optional[Any]:
@@ -379,16 +400,16 @@ class FileCache:
             return None
 
         try:
-            with open(self.file_path, 'r') as cache_file:
+            with open(self.file_path, "r") as cache_file:
                 cache_data = json.load(cache_file)
 
             current_time = time.time()
-            cache_time = cache_data['timestamp']
-            expires_in = cache_data['expires_in']
+            cache_time = cache_data["timestamp"]
+            expires_in = cache_data["expires_in"]
 
             if current_time - cache_time > expires_in:
                 return None
 
-            return cache_data['value']
+            return cache_data["value"]
         except Exception:
             return None
