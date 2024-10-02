@@ -84,6 +84,8 @@ class ProxyChecker:
         cached_value = cache.read_cache()
         if cached_value is not None:
             return cached_value
+        if not cache_timeout:
+            cache_timeout = 3600
 
         ip_services = [
             "https://api64.ipify.org",
@@ -95,6 +97,7 @@ class ProxyChecker:
             "https://httpbin.org/ip",
             "https://api.ipify.org",
         ]
+        r = None
         for url in ip_services:
             r = self.send_query(url=url)
             if r:
@@ -119,12 +122,12 @@ class ProxyChecker:
 
     def send_query(
         self,
-        proxy: Union[str, bool] = False,
-        url: str = None,
+        proxy: Optional[str] = None,
+        url: Optional[str] = None,
         tls=1.3,
-        user: str = None,
-        password: str = None,
-    ) -> Union[bool, dict]:
+        user: Optional[str] = None,
+        password: Optional[str] = None,
+    ) -> Union[None, dict]:
         """
         Sends a query to a judge to get info from judge.
         Args:
@@ -172,11 +175,11 @@ class ProxyChecker:
             c.perform()
         except Exception as e:
             # print(e)
-            return False
+            return None
 
-        # Return False if the status is not 200
+        # Return None if the status is not 200
         if c.getinfo(c.HTTP_CODE) != 200:
-            return False
+            return None
 
         # Calculate the request timeout in milliseconds
         timeout = round(c.getinfo(c.CONNECT_TIME) * 1000)
@@ -239,12 +242,12 @@ class ProxyChecker:
         check_country: bool = True,
         check_address: bool = False,
         check_all_protocols: bool = False,
-        protocol: Union[str, list] = None,
+        protocol: Optional[Union[str, list]] = None,
         retries: int = 1,
         tls: float = 1.3,
-        user: str = None,
-        password: str = None,
-    ) -> Union[bool, dict]:
+        user: Optional[str] = None,
+        password: Optional[str] = None,
+    ) -> Union[None, dict]:
         """
         Checks if the proxy is working.
         Args:
@@ -309,11 +312,12 @@ class ProxyChecker:
 
         # Check if the proxy failed all tests
         if len(protocols) == 0:
-            return False
+            return None
 
         r = protocols[random.choice(list(protocols.keys()))]["response"]
 
         # Get country
+        country = []
         if check_country:
             country = self.get_country(proxy.split(":")[0])
 
@@ -324,6 +328,7 @@ class ProxyChecker:
         timeout = timeout // len(protocols)
 
         # Check remote address
+        remote_addr = "0.0.0.0"
         if check_address:
             remote_regex = r"REMOTE_ADDR = (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"
             remote_addr = re.search(remote_regex, r)
